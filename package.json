@@ -35,6 +35,8 @@
     "prisma-migrate-deploy": "node ./scripts/prisma-deploy.mjs",
     "prisma-migrate-status": "prisma migrate status --schema ./libraries/nestjs-libraries/src/database/prisma/schema.prisma",
     "validate:backend-policy": "node scripts/validate-no-destructive-prisma.mjs && node scripts/validate-no-latest-images.mjs && node scripts/validate-no-direct-cross-system-writes.mjs && node scripts/validate-tenant-repositories.mjs",
+    "contracts:routes:generate": "node scripts/social-route-inventory.mjs",
+    "contracts:routes:check": "node scripts/social-route-inventory.mjs --check",
     "validate:kong-social": "node ./scripts/validate-kong-social.mjs",
     "validate:social-release": "node ./scripts/validate-social-release.mjs",
     "generate:social-sdk": "node ./scripts/generate-social-sdk.mjs",

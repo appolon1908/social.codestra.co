@@ -3,6 +3,11 @@ import { relative, resolve } from 'node:path';
 import ts from 'typescript';
 
 const root = resolve(import.meta.dirname, '..');
+// Emit POSIX-style paths so the inventory is byte-identical on every platform.
+// This is a no-op on Linux. On Windows relative() yields backslashes, which both
+// corrupt every "source" value and silently break the middlewareTransportSources
+// lookup below, dropping the transport routes from the generated inventory.
+const relativePosix = (target) => relative(root, target).split('\\').join('/');
 const output = resolve(root, 'contracts/generated/social-route-inventory.json');
 const roots = ['apps/backend/src', 'apps/orchestrator/src'];
 const middlewareTransportSources = [
@@ -119,7 +124,7 @@ for (const sourcePath of [
               path: normalizePath(controllerPath, methodPath),
               controller: node.name.text,
               handler: member.name.getText(source),
-              source: relative(root, sourcePath),
+              source: relativePosix(sourcePath),
               controller_decorators: controllerDecorators,
               handler_decorators: handlerDecorators,
               parameter_decorators: parameterDecorators,
@@ -130,7 +135,7 @@ for (const sourcePath of [
     }
   });
 
-  if (middlewareTransportSources.includes(relative(root, sourcePath))) {
+  if (middlewareTransportSources.includes(relativePosix(sourcePath))) {
     const visit = (node) => {
       if (
         ts.isCallExpression(node) &&
@@ -148,7 +153,7 @@ for (const sourcePath of [
             path: normalizePath('', path),
             controller: null,
             handler: 'app.use',
-            source: relative(root, sourcePath),
+            source: relativePosix(sourcePath),
             controller_decorators: [],
             handler_decorators: [],
             parameter_decorators: [],

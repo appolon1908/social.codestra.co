@@ -12,7 +12,11 @@ function shutdown(code = 0) {
 }
 
 function start(command, args, name) {
-  const child = spawn(command, args, { cwd: root, env: process.env, stdio: 'inherit' });
+  const child = spawn(command, args, {
+    cwd: root,
+    env: process.env,
+    stdio: 'inherit',
+  });
   children.add(child);
   child.on('exit', (code, signal) => {
     children.delete(child);
@@ -27,7 +31,18 @@ process.on('SIGINT', () => shutdown(0));
 // Runtime replicas never execute schema migrations. Release orchestration must
 // invoke scripts/prisma-deploy.mjs once as a separate migration job, then only
 // start or replace application replicas after that job succeeds.
+if (process.env.MIGRATE_ON_START === 'true') {
+  console.error(
+    '[codestra-runtime] MIGRATE_ON_START is forbidden; run the protected one-shot migration command before rollout'
+  );
+  process.exit(1);
+}
+
 start('nginx', ['-g', 'daemon off;'], 'nginx');
 start('node', [`${root}/dist/apps/backend/src/main.js`], 'backend');
 start('node', [`${root}/dist/apps/orchestrator/src/main.js`], 'orchestrator');
-start('node', [`${root}/node_modules/next/dist/bin/next`, 'start', '-p', '4200'], 'frontend');
+start(
+  'node',
+  [`${root}/node_modules/next/dist/bin/next`, 'start', '-p', '4200'],
+  'frontend'
+);

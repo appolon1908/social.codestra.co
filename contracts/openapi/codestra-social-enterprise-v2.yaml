@@ -1,0 +1,475 @@
+openapi: 3.1.0
+info:
+  title: Codestra Social enterprise API
+  version: 2.1.0
+  description: >-
+    Public contract exposed by api.codestra.co through Kong and authoritative
+    Middleware. Provider credentials and private product endpoints are excluded.
+servers:
+  - url: https://api.codestra.co/v2/social
+security:
+  - userOAuth: []
+tags:
+  - { name: Onboarding }
+  - { name: Brands }
+  - { name: Content }
+  - { name: Approvals }
+  - { name: Campaigns }
+  - { name: Engagement }
+  - { name: Analytics }
+  - { name: Billing }
+  - { name: Integrations }
+  - { name: Webhooks }
+paths:
+  /onboarding:
+    post:
+      operationId: startOnboarding
+      summary: Start or replay tenant onboarding
+      parameters: &mutationHeaders
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+    get:
+      operationId: getOnboarding
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /onboarding/readiness:
+    get:
+      operationId: getOnboardingReadiness
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /onboarding/activate:
+    post:
+      operationId: requestTenantActivation
+      parameters: *mutationHeaders
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+        '409': { description: Readiness prerequisites or safety policy failed }
+  /brand-profiles:
+    get:
+      operationId: listBrandProfiles
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    post:
+      operationId: createBrandProfile
+      parameters: *mutationHeaders
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /brand-profiles/{brandId}:
+    parameters:
+      - $ref: '#/components/parameters/BrandId'
+    get:
+      operationId: getBrandProfile
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      operationId: updateBrandProfile
+      parameters: *mutationHeaders
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /billing/catalog:
+    get:
+      operationId: getBillingCatalog
+      security: []
+      summary: Return the signed, server-owned public plan catalog
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /billing/subscription:
+    get:
+      operationId: getTenantSubscription
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /billing/usage:
+    get:
+      operationId: getTenantUsage
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /billing/checkout-sessions:
+    post:
+      operationId: createBillingCheckoutSession
+      summary: Create a server-priced Stripe Checkout session
+      parameters: *mutationHeaders
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+        '422':
+          description: Plan, currency, seat, or transition policy rejected the command
+  /billing/portal-sessions:
+    post:
+      operationId: createBillingPortalSession
+      parameters: *mutationHeaders
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /billing/plan-changes:
+    post:
+      operationId: requestBillingPlanChange
+      parameters: *mutationHeaders
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+        '409':
+          {
+            description: Subscription state does not permit the requested transition,
+          }
+  /billing/cancellation:
+    post:
+      operationId: requestBillingCancellation
+      parameters: *mutationHeaders
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /billing/invoices:
+    get:
+      operationId: listBillingInvoices
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /campaigns:
+    get:
+      operationId: listCampaigns
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    post:
+      operationId: createCampaign
+      parameters: *mutationHeaders
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /campaigns/{campaignId}:
+    parameters:
+      - $ref: '#/components/parameters/CampaignId'
+    get:
+      operationId: getCampaign
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      operationId: updateCampaign
+      parameters: *mutationHeaders
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /campaigns/{campaignId}/items:
+    post:
+      operationId: addCampaignItem
+      parameters:
+        - $ref: '#/components/parameters/CampaignId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /calendar:
+    get:
+      operationId: getCorporateCalendar
+      parameters:
+        - $ref: '#/components/parameters/From'
+        - $ref: '#/components/parameters/To'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /content/revisions:
+    post:
+      operationId: createContentRevision
+      parameters: *mutationHeaders
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /content/generate:
+    post:
+      operationId: generateGovernedContent
+      parameters: *mutationHeaders
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+        '422':
+          description: Brand, model, source, or risk policy rejected the request
+  /approvals:
+    get:
+      operationId: listApprovalTasks
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    post:
+      operationId: submitApproval
+      parameters: *mutationHeaders
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /approvals/{approvalId}:
+    get:
+      operationId: getApproval
+      parameters:
+        - $ref: '#/components/parameters/ApprovalId'
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /approvals/{approvalId}/review-tokens:
+    post:
+      operationId: createExternalReviewToken
+      parameters:
+        - $ref: '#/components/parameters/ApprovalId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+  /approvals/{approvalId}/decisions:
+    post:
+      operationId: decideApproval
+      parameters:
+        - $ref: '#/components/parameters/ApprovalId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+        '409':
+          description: Stale revision, duplicate actor, or invalid transition
+  /publications:
+    post:
+      operationId: requestPublication
+      parameters: *mutationHeaders
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /publications/{publicationId}:
+    get:
+      operationId: getPublication
+      parameters:
+        - $ref: '#/components/parameters/PublicationId'
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /engagement:
+    get:
+      operationId: listEngagement
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /engagement/{engagementId}/assignment:
+    put:
+      operationId: assignEngagement
+      parameters:
+        - $ref: '#/components/parameters/EngagementId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /engagement/{engagementId}/escalations:
+    post:
+      operationId: escalateEngagement
+      parameters:
+        - $ref: '#/components/parameters/EngagementId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /engagement/{engagementId}/reply:
+    post:
+      operationId: replyToEngagement
+      parameters:
+        - $ref: '#/components/parameters/EngagementId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /engagement/{engagementId}/resolution:
+    put:
+      operationId: resolveEngagement
+      parameters:
+        - $ref: '#/components/parameters/EngagementId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /analytics/overview:
+    get:
+      operationId: getAnalyticsOverview
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /analytics/campaigns/{campaignId}:
+    get:
+      operationId: getCampaignAttribution
+      parameters:
+        - $ref: '#/components/parameters/CampaignId'
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /reports:
+    post:
+      operationId: requestReport
+      parameters: *mutationHeaders
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /integrations:
+    get:
+      operationId: listIntegrationHealth
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /integrations/{connector}/health:
+    get:
+      operationId: getConnectorHealth
+      parameters:
+        - $ref: '#/components/parameters/Connector'
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+  /integrations/{connector}/commands:
+    post:
+      operationId: submitConnectorCommand
+      security:
+        - serviceOAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Connector'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /automation/commands:
+    post:
+      operationId: submitAutomationCommand
+      security:
+        - serviceOAuth: []
+      parameters: *mutationHeaders
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /webhooks/endpoints:
+    get:
+      operationId: listWebhookEndpoints
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+    post:
+      operationId: createWebhookEndpoint
+      parameters: *mutationHeaders
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+  /webhooks/endpoints/{webhookId}/rotate-secret:
+    post:
+      operationId: rotateWebhookSecret
+      parameters:
+        - $ref: '#/components/parameters/WebhookId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '201': { $ref: '#/components/responses/Created' }
+  /webhooks/deliveries/{deliveryId}/replay:
+    post:
+      operationId: replayWebhookDelivery
+      parameters:
+        - $ref: '#/components/parameters/DeliveryId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202': { $ref: '#/components/responses/Accepted' }
+  /audit:
+    get:
+      operationId: searchAudit
+      responses:
+        '200': { $ref: '#/components/responses/Ok' }
+components:
+  securitySchemes:
+    userOAuth:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://auth.codestra.co/realms/codestra/protocol/openid-connect/auth
+          tokenUrl: https://auth.codestra.co/realms/codestra/protocol/openid-connect/token
+          scopes: {}
+    serviceOAuth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://auth.codestra.co/realms/codestra/protocol/openid-connect/token
+          scopes: {}
+  parameters:
+    CorrelationId:
+      name: X-Correlation-ID
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: { type: string, minLength: 16, maxLength: 200 }
+    BrandId:
+      name: brandId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    ApprovalId:
+      name: approvalId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    PublicationId:
+      name: publicationId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    EngagementId:
+      name: engagementId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    CampaignId:
+      name: campaignId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    WebhookId:
+      name: webhookId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    DeliveryId:
+      name: deliveryId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Connector:
+      name: connector
+      in: path
+      required: true
+      schema: { enum: [middleware, odoo, n8n, klyrow, telnexa] }
+    From:
+      name: from
+      in: query
+      required: true
+      schema: { type: string, format: date-time }
+    To:
+      name: to
+      in: query
+      required: true
+      schema: { type: string, format: date-time }
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema: { type: string, maxLength: 500 }
+  responses:
+    Accepted:
+      description: Durable command accepted
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [command_id, state, replayed]
+            properties:
+              command_id: { type: string, format: uuid }
+              state: { enum: [accepted, blocked] }
+              replayed: { type: boolean }
+    Created:
+      description: Tenant-scoped resource created
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ResourceEnvelope' }
+    Ok:
+      description: Tenant-scoped response
+    NotFound:
+      description: Resource is absent from the caller tenant
+  schemas:
+    ResourceEnvelope:
+      type: object
+      additionalProperties: false
+      required: [id, correlation_id]
+      properties:
+        id: { type: string, format: uuid }
+        correlation_id: { type: string, format: uuid }
+        data: { type: object, additionalProperties: true }
+    Error:
+      type: object
+      additionalProperties: false
+      required: [code, message, correlation_id]
+      properties:
+        code: { type: string }
+        message: { type: string }
+        correlation_id: { type: string, format: uuid }
+        details: {}

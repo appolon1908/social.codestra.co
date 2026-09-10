@@ -1,0 +1,108 @@
+asyncapi: 3.0.0
+info:
+  title: Codestra Social enterprise events
+  version: 2.0.0
+  description: >-
+    CloudEvents-compatible, at-least-once events delivered through the
+    Middleware signed webhook outbox. Consumers must deduplicate by event id.
+defaultContentType: application/cloudevents+json
+servers:
+  production:
+    host: api.codestra.co
+    protocol: https
+    pathname: /v2/webhooks/social
+    security:
+      - $ref: '#/components/securitySchemes/signedWebhook'
+channels:
+  socialEvents:
+    address: /events
+    messages:
+      event:
+        $ref: '#/components/messages/SocialEvent'
+operations:
+  receiveSocialEvent:
+    action: receive
+    channel:
+      $ref: '#/channels/socialEvents'
+    messages:
+      - $ref: '#/channels/socialEvents/messages/event'
+components:
+  messages:
+    SocialEvent:
+      name: socialEvent
+      title: Versioned Codestra Social CloudEvent
+      headers:
+        $ref: '#/components/schemas/SignatureHeaders'
+      payload:
+        $ref: '#/components/schemas/EventEnvelope'
+  schemas:
+    SignatureHeaders:
+      type: object
+      required: [x-codestra-signature, x-codestra-timestamp]
+      properties:
+        x-codestra-signature: { type: string, pattern: '^v1=[a-f0-9]{64}$' }
+        x-codestra-timestamp: { type: string, pattern: '^[0-9]{10}$' }
+    EventEnvelope:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          specversion,
+          id,
+          source,
+          type,
+          time,
+          tenantid,
+          correlationid,
+          datacontenttype,
+          data,
+        ]
+      properties:
+        specversion: { const: '1.0' }
+        id: { type: string, format: uuid }
+        source: { const: codestra.social }
+        type: { $ref: '#/components/schemas/EventType' }
+        subject: { type: string, maxLength: 500 }
+        time: { type: string, format: date-time }
+        tenantid: { type: string, minLength: 1, maxLength: 100 }
+        correlationid: { type: string, format: uuid }
+        causationid: { type: [string, 'null'] }
+        datacontenttype: { const: application/json }
+        data: { type: object, additionalProperties: true }
+    EventType:
+      enum:
+        - social.brand.created.v2
+        - social.brand.revised.v2
+        - social.ai.generation.requested.v2
+        - social.ai.generation.blocked.v2
+        - social.content.created.v2
+        - social.content.approved.v2
+        - social.content.changes_requested.v2
+        - social.campaign.created.v2
+        - social.campaign.activated.v2
+        - social.campaign.paused.v2
+        - social.publication.requested.v2
+        - social.publication.scheduled.v2
+        - social.publication.completed.v2
+        - social.publication.failed.v2
+        - social.publication.canceled.v2
+        - social.provider.accepted.v2
+        - social.account.connected.v2
+        - social.account.expiring.v2
+        - social.account.disconnected.v2
+        - social.engagement.received.v2
+        - social.engagement.assigned.v2
+        - social.engagement.replied.v2
+        - social.engagement.resolved.v2
+        - social.engagement.sla_breached.v2
+        - social.engagement.escalation.requested.v2
+        - social.report.ready.v2
+        - social.subscription.changed.v2
+        - social.connector.unhealthy.v2
+        - social.delivery.dead_lettered.v2
+        - social.webhook.endpoint.disabled.v2
+  securitySchemes:
+    signedWebhook:
+      type: httpApiKey
+      in: header
+      name: X-Codestra-Signature

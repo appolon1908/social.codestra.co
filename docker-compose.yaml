@@ -24,7 +24,6 @@ services:
       BILLING_LIVE_CHARGE: 'false'
       EXTERNAL_MODEL_CALLS_ENABLED: 'false'
       WEBHOOK_DELIVERY_ENABLED: 'false'
-      PUBLISHING_KILL_SWITCH: 'true'
       ODOO_WRITE: 'false'
       N8N_DELIVERY_ENABLED: 'false'
       KLYROW_WRITE: 'false'

@@ -892,6 +892,7 @@ html[dir='rtl'] [dir='ltr'] {
 .codestra-login-form .codestra-login-submit { border: 1px solid var(--codestra-gold); background: var(--codestra-gold); color: var(--codestra-bg); font-weight: 800; box-shadow: 0 1rem 2rem rgba(244,194,35,.12); }
 .codestra-login-form .codestra-login-submit:hover,
 .codestra-login-form .codestra-login-submit:focus-visible { border-color: var(--codestra-gold-hover); background: var(--codestra-gold-hover); color: var(--codestra-bg); }
+.codestra-login-form .codestra-login-submit:focus-visible { box-shadow: 0 0 0 3px rgba(244,194,35,.35), 0 1rem 2rem rgba(244,194,35,.12); }
 .codestra-login-form a { color: var(--codestra-gold); }
 .codestra-login-form a:hover { color: var(--codestra-gold-hover); }
 @media (prefers-reduced-motion: reduce) {

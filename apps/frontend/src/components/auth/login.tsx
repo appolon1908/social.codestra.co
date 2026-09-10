@@ -62,20 +62,20 @@ export function Login() {
   };
   return (
     <FormProvider {...form}>
-      <form className="flex-1 flex" onSubmit={form.handleSubmit(onSubmit)}>
+      <form className="codestra-login-form flex-1 flex" onSubmit={form.handleSubmit(onSubmit)}>
         <div className="flex flex-col flex-1">
           <div>
-            <h1 className="text-[40px] font-[500] -tracking-[0.8px] text-start cursor-pointer">
+            <h1 className="codestra-login-title text-[40px] font-[500] -tracking-[0.8px] text-start cursor-pointer">
               {t('codestra_sign_in_title', 'Sign in to Codestra')}
             </h1>
-            <p className="mt-3 text-sm leading-6 text-[#a1a1aa]">
+            <p className="codestra-login-intro mt-3 text-sm leading-6 text-[#a1a1aa]">
               {t(
                 'codestra_social_tagline',
                 'Plan, create, schedule, and manage your social content from one secure workspace.'
               )}
             </p>
           </div>
-          <div className="text-[14px] mt-[32px] mb-[12px]">
+          <div className="codestra-login-section-label text-[14px] mt-[32px] mb-[12px]">
             {t('continue_with', 'Continue With')}
           </div>
           <div className="flex flex-col">
@@ -136,7 +136,7 @@ export function Login() {
                 <div className="w-full flex">
                   <Button
                     type="submit"
-                    className="flex-1 rounded-[10px] !h-[52px]"
+                    className="codestra-login-submit flex-1 rounded-[10px] !h-[52px]"
                     loading={loading}
                   >
                     {t('sign_in_1', 'Sign in')}

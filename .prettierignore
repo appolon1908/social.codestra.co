@@ -2,3 +2,9 @@
 /dist
 /coverage
 /.nx/cache
+
+# Generated artifacts are byte-defined by their generator and verified by
+# `pnpm contracts:routes:check`, which requires an exact JSON.stringify match.
+# Prettier collapses short arrays that JSON.stringify always expands, so
+# formatting these would permanently break that check.
+/contracts/generated

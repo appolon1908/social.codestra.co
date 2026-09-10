@@ -5,29 +5,59 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'integrations/codestra-social/**'
+      - 'scripts/validate_codestra_social_adapter.py'
+      - '.github/workflows/codestra-social-adapter-stage5.yml'
 
 permissions:
   contents: read
-
-concurrency:
-  group: codestra-social-adapter-stage5-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   certify:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - name: Check out exact workflow SHA
+      - name: Check out exact source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 1
           persist-credentials: false
-
+      - name: Prove exact source identity
+        env:
+          EXPECTED_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_HEAD_SHA"
+          test -z "$(git status --porcelain)"
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
-          python-version: "3.12"
+          python-version: '3.12'
+      - name: Validate the fail-closed Social adapter contract
+        run: python scripts/validate_codestra_social_adapter.py
 
-      - name: Certify the fail-closed Codestra Social adapter
-        run: python3 scripts/validate_codestra_social_adapter.py
+  certify-merge-result:
+    name: certify merge result
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out exact merge result
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Prove merge-result identity
+        env:
+          EXPECTED_MERGE_SHA: ${{ github.sha }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$EXPECTED_MERGE_SHA"
+          test -z "$(git status --porcelain)"
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: '3.12'
+      - name: Validate the fail-closed Social adapter contract
+        run: python scripts/validate_codestra_social_adapter.py

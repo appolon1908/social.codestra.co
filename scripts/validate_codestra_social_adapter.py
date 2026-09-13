@@ -2,6 +2,7 @@ from pathlib import Path
 
 CLIENT = Path('integrations/codestra-social/client.ts')
 COMPOSE = Path('deploy/staging/compose.yaml')
+SECRET_ENV = Path('var/docker/secret-env.mjs')
 POLICY = Path('governance/release-policy.json')
 
 
@@ -23,7 +24,13 @@ def main() -> None:
     assert "PUBLISHING_KILL_SWITCH: 'true'" in compose
     assert "SOCIAL_PUBLISH: 'false'" in compose
     assert "SOCIAL_PROVIDER_WRITES: 'false'" in compose
+    assert 'var/docker/secret-env.mjs' in compose
+    assert "http://127.0.0.1:5000/" in compose
     assert '3000:3000' not in compose and '9090:9090' not in compose
+
+    secret_env = SECRET_ENV.read_text(encoding='utf-8')
+    assert "'DATABASE_URL'" in secret_env
+    assert "delete process.env[fileVariable]" in secret_env
     assert POLICY.exists()
     print('SOCIAL_RUNTIME_ADAPTER_STAGE5_CERTIFICATION=PASS')
 

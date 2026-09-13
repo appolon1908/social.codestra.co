@@ -10,6 +10,13 @@
     X-Content-Type-Options nosniff
     X-Frame-Options DENY
     Referrer-Policy no-referrer
+    Permissions-Policy "camera=(), microphone=(), geolocation=()"
+    -Server
   }
-  reverse_proxy application:3000
+
+  reverse_proxy application:5000 {
+    health_uri /
+    health_interval 15s
+    health_timeout 5s
+  }
 }

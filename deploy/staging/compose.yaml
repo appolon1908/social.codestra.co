@@ -1,0 +1,160 @@
+name: codestra-social-staging
+
+x-safe-runtime: &safe-runtime
+  image: ${CODESTRA_SOCIAL_IMAGE:?immutable application digest required}
+  restart: unless-stopped
+  read_only: true
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  pids_limit: 512
+  tmpfs: [/tmp:rw,noexec,nosuid,size=512m,mode=1777]
+  environment: &safe-environment
+    NODE_ENV: production
+    DISABLE_REGISTRATION: 'true'
+    PUBLISHING_KILL_SWITCH: 'true'
+    SOCIAL_PUBLISH: 'false'
+    SOCIAL_PROVIDER_WRITES: 'false'
+    SOCIAL_CALLBACK_PROCESSING: 'false'
+    SOCIAL_OUTBOX_DELIVERY: 'false'
+    SOCIAL_DEAD_LETTER_REPLAY: 'false'
+    PRODUCTION_DEPLOYMENT: 'false'
+    DATABASE_URL_FILE: /run/secrets/database_url
+    REDIS_URL: redis://redis:6379
+    JWT_SIGNING_KEY_FILE: /run/secrets/jwt_signing_key
+    DATA_ENCRYPTION_KEY_V1_FILE: /run/secrets/data_encryption_key_v1
+    API_KEY_PEPPER_FILE: /run/secrets/api_key_pepper
+    SESSION_TOKEN_PEPPER_FILE: /run/secrets/session_token_pepper
+    OAUTH_TOKEN_PEPPER_FILE: /run/secrets/oauth_token_pepper
+    WEBHOOK_MASTER_KEY_FILE: /run/secrets/webhook_master_key
+    TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:?required}
+  secrets: &app-secrets
+    - database_url
+    - jwt_signing_key
+    - data_encryption_key_v1
+    - api_key_pepper
+    - session_token_pepper
+    - oauth_token_pepper
+    - webhook_master_key
+  networks: [application, data]
+  depends_on:
+    postgres: {condition: service_healthy}
+    redis: {condition: service_healthy}
+
+services:
+  edge:
+    image: ${CODESTRA_CADDY_IMAGE:?immutable Caddy digest required}
+    restart: unless-stopped
+    ports: ['80:80', '443:443']
+    environment:
+      CODESTRA_SOCIAL_HOST: ${CODESTRA_SOCIAL_HOST:?required}
+      CODESTRA_SOCIAL_ACME_EMAIL: ${CODESTRA_SOCIAL_ACME_EMAIL:?required}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [edge, application]
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    depends_on:
+      application: {condition: service_healthy}
+
+  migrate:
+    <<: *safe-runtime
+    restart: 'no'
+    command:
+      - node
+      - var/docker/secret-env.mjs
+      - node
+      - scripts/prisma-deploy.mjs
+
+  application:
+    <<: *safe-runtime
+    command:
+      - node
+      - var/docker/secret-env.mjs
+      - node
+      - /usr/local/bin/codestra-runtime-supervisor.mjs
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:5000/').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"
+      interval: 15s
+      timeout: 5s
+      retries: 15
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+
+  postgres:
+    image: ${CODESTRA_POSTGRES_IMAGE:?immutable PostgreSQL digest required}
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME:-codestra_social}
+      POSTGRES_USER: ${DATABASE_USER:-codestra_social}
+      POSTGRES_PASSWORD_FILE: /run/secrets/database_password
+    secrets: [database_password]
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    networks: [data]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -U ${DATABASE_USER:-codestra_social} -d ${DATABASE_NAME:-codestra_social}']
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  redis:
+    image: ${CODESTRA_REDIS_IMAGE:?immutable Redis digest required}
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes: [redis_data:/data]
+    networks: [data]
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+
+  prometheus:
+    image: ${CODESTRA_PROMETHEUS_IMAGE:?immutable Prometheus digest required}
+    restart: unless-stopped
+    volumes:
+      - ../../monitoring/prometheus.staging.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks: [observability, application]
+
+  grafana:
+    image: ${CODESTRA_GRAFANA_IMAGE:?immutable Grafana digest required}
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_password
+    secrets: [grafana_password]
+    volumes: [grafana_data:/var/lib/grafana]
+    networks: [observability]
+
+networks:
+  edge: {}
+  application: {}
+  data: {internal: true}
+  observability: {internal: true}
+
+volumes:
+  caddy_data: {}
+  caddy_config: {}
+  postgres_data: {}
+  redis_data: {}
+  prometheus_data: {}
+  grafana_data: {}
+
+secrets:
+  database_url: {file: '${CODESTRA_SOCIAL_SECRET_DIR}/database-url'}
+  database_password: {file: '${CODESTRA_SOCIAL_SECRET_DIR}/database-password'}
+  jwt_signing_key: {file: '${CODESTRA_SOCIAL_SECRET_DIR}/jwt-signing-key'}
+  data_encryption_key_v1: {file: '${CODESTRA_SOCIAL_SECRET_DIR}/data-encryption-key-v1'}
+  api_key_pepper: {file: '${CODESTRA_SOCIAL_SECRET_DIR}/api-key-pepper'}
+  session_token_pepper: {file: '${CODESTRA_SOCIAL_SECRET_DIR}/session-token-pepper'}
+  oauth_token_pepper: {file: '${CODESTRA_SOCIAL_SECRET_DIR}/oauth-token-pepper'}
+  webhook_master_key: {file: '${CODESTRA_SOCIAL_SECRET_DIR}/webhook-master-key'}
+  grafana_password: {file: '${CODESTRA_SOCIAL_SECRET_DIR}/grafana-password'}

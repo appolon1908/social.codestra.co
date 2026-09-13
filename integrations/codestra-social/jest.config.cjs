@@ -1,8 +1,16 @@
 /** @type {import('jest').Config} */
 module.exports = {
-  rootDir: '../..',
-  preset: 'ts-jest',
+  rootDir: '.',
   testEnvironment: 'node',
-  testMatch: ['<rootDir>/integrations/codestra-social/**/*.spec.ts'],
+  testMatch: ['<rootDir>/**/*.spec.ts'],
+  transform: {
+    '^.+\\.tsx?$': [
+      'ts-jest',
+      {
+        isolatedModules: true,
+        tsconfig: '../../tsconfig.base.json',
+      },
+    ],
+  },
   clearMocks: true,
 };

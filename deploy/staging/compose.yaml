@@ -62,12 +62,25 @@ services:
   migrate:
     <<: *safe-runtime
     restart: 'no'
-    command: ['node', 'scripts/prisma-deploy.mjs']
+    command:
+      - node
+      - var/docker/secret-env.mjs
+      - node
+      - scripts/prisma-deploy.mjs
 
   application:
     <<: *safe-runtime
+    command:
+      - node
+      - var/docker/secret-env.mjs
+      - node
+      - /usr/local/bin/codestra-runtime-supervisor.mjs
     healthcheck:
-      test: [CMD, wget, -q, -O, /dev/null, http://127.0.0.1:3000/ready]
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:5000/').then(r=>process.exit(r.status<500?0:1)).catch(()=>process.exit(1))"
       interval: 15s
       timeout: 5s
       retries: 15

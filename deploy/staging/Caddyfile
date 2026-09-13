@@ -1,0 +1,15 @@
+{
+  email {$CODESTRA_SOCIAL_ACME_EMAIL}
+  admin off
+}
+
+{$CODESTRA_SOCIAL_HOST} {
+  encode zstd gzip
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    X-Content-Type-Options nosniff
+    X-Frame-Options DENY
+    Referrer-Policy no-referrer
+  }
+  reverse_proxy application:3000
+}

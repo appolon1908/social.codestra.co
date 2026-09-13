@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "defaultBranch": "main",
+  "requiredPullRequestChecks": [
+    "Backend CI / Backend policy, migration, test, and build",
+    "Backend CI / Backend container build and hardening",
+    "Codestra Social Adapter Stage 5 / Social adapter contract and staging safety"
+  ],
+  "requiredApprovals": 2,
+  "requireCodeOwnerReview": true,
+  "requireResolvedConversations": true,
+  "allowForcePush": false,
+  "allowDeletion": false,
+  "allowAdminBypass": false,
+  "productionCapabilityDefaults": {
+    "PUBLISHING_KILL_SWITCH": true,
+    "SOCIAL_PUBLISH": false,
+    "SOCIAL_PROVIDER_WRITES": false,
+    "SOCIAL_CALLBACK_PROCESSING": false,
+    "SOCIAL_OUTBOX_DELIVERY": false,
+    "PRODUCTION_DEPLOYMENT": false
+  },
+  "notes": [
+    "This manifest records expected governance; GitHub branch rules must be configured separately.",
+    "Do not enable CODEOWNERS enforcement until two eligible governed reviewers exist."
+  ]
+}

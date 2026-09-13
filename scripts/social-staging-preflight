@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+ENV_FILE="${1:-$ROOT/deploy/staging/staging.env}"
+[[ -f "$ENV_FILE" ]] || { echo "missing staging env: $ENV_FILE" >&2; exit 2; }
+set -a; source "$ENV_FILE"; set +a
+fail() { echo "social-staging-preflight: $*" >&2; exit 2; }
+for name in CODESTRA_SOCIAL_IMAGE CODESTRA_CADDY_IMAGE CODESTRA_POSTGRES_IMAGE CODESTRA_REDIS_IMAGE CODESTRA_PROMETHEUS_IMAGE CODESTRA_GRAFANA_IMAGE; do
+  [[ "${!name:-}" =~ @sha256:[0-9a-f]{64}$ ]] || fail "$name must use an immutable sha256 digest"
+done
+[[ "${CODESTRA_SOCIAL_SOURCE_SHA:-}" =~ ^[0-9a-f]{40}$ ]] || fail "exact source SHA required"
+[[ "${CODESTRA_SOCIAL_SECRET_DIR:-}" = /* ]] || fail "secret directory must be absolute"
+for file in database-url database-password jwt-signing-key data-encryption-key-v1 api-key-pepper session-token-pepper oauth-token-pepper webhook-master-key grafana-password; do
+  path="$CODESTRA_SOCIAL_SECRET_DIR/$file"
+  [[ -f "$path" && ! -L "$path" ]] || fail "missing regular secret file: $file"
+done
+docker compose --env-file "$ENV_FILE" -f "$ROOT/deploy/staging/compose.yaml" config --quiet
+rendered="$(docker compose --env-file "$ENV_FILE" -f "$ROOT/deploy/staging/compose.yaml" config)"
+if grep -Eq 'published: "?(3000|5432|6379|9090)"?$' <<<"$rendered"; then
+  fail "native application, database, cache, or monitoring port published"
+fi
+echo "SOCIAL_STAGING_PREFLIGHT=PASS"

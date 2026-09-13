@@ -66,5 +66,5 @@ jobs:
         run: pnpm install --frozen-lockfile --package-import-method=copy --child-concurrency=1
       - name: Test adapter behavior
         run: >-
-          pnpm exec jest --runInBand --coverage=false --runTestsByPath
-          integrations/codestra-social/client.spec.ts
+          pnpm exec jest --runInBand --coverage=false
+          --config integrations/codestra-social/jest.config.cjs

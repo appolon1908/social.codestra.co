@@ -1,6 +1,6 @@
 services:
   postiz:
-    image: codestra-social:${CODESTRA_IMAGE_VERSION:?immutable candidate version required}
+    image: ${CODESTRA_IMAGE_REPOSITORY:-ghcr.io/appolon1908-hue/social.codestra.co}@${CODESTRA_IMAGE_DIGEST:?sha256 image digest required}
     read_only: true
     cap_drop: [ALL]
     security_opt: [no-new-privileges:true]
@@ -26,8 +26,26 @@ services:
       PASSWORD_RESET_SIGNING_KEY_FILE: /run/secrets/password_reset_signing_key
       WEBHOOK_MASTER_KEY_FILE: /run/secrets/webhook_master_key
       WEBHOOK_DELIVERY_ENABLED: 'false'
+      SOCIAL_PUBLISHING_ENABLED: 'false'
+      SOCIAL_PROVIDER_CALLBACKS_ENABLED: 'false'
+      SOCIAL_PROVIDER_WEBHOOK_SECRETS_JSON: '{}'
+      SOCIAL_PROVIDER_WEBHOOK_TOLERANCE_SECONDS: '300'
+      MIDDLEWARE_OUTBOX_ENABLED: 'false'
+      CODESTRA_MIDDLEWARE_SOCIAL_EVENTS_URL: 'https://api.codestra.co/v1/webhooks/social/events'
+      MIDDLEWARE_OUTBOX_POLL_INTERVAL_MS: '1000'
+      MIDDLEWARE_OUTBOX_BATCH_SIZE: '20'
+      MIDDLEWARE_OUTBOX_MAX_ATTEMPTS: '8'
+      MIDDLEWARE_CLIENT_ID: 'codestra-social'
+      MIDDLEWARE_CLIENT_SCOPE: 'social.events.write'
+      MIDDLEWARE_MTLS_REQUIRED: 'true'
+      MIDDLEWARE_HMAC_REQUIRED: 'true'
+      ENABLE_EXTERNAL_DELIVERY: 'false'
       PUBLISHING_KILL_SWITCH: 'true'
       METRICS_ENABLED: 'false'
+      METRICS_ALLOWED_IPS: ${METRICS_ALLOWED_IPS:-}
+      IMAGE_DIGEST: ${CODESTRA_IMAGE_DIGEST:-unknown}
+      IMAGE_VERSION: ${CODESTRA_IMAGE_VERSION:?immutable candidate version required}
+      MIGRATE_ON_START: 'false'
       TRUSTED_PROXY_IPS: ${TRUSTED_PROXY_IPS:?exact Caddy container address required; loopback is trusted internally}
       AGENT_JSON_LIMIT: 2mb
 

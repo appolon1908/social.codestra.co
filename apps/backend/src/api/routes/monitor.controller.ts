@@ -4,6 +4,7 @@ import { PrismaService } from '@gitroom/nestjs-libraries/database/prisma/prisma.
 import { Request, Response } from 'express';
 import { ioRedis } from '@gitroom/nestjs-libraries/redis/redis.service';
 import net from 'node:net';
+import { isRuntimeCapabilityEnabled } from '@gitroom/helpers/configuration/runtime-capabilities';
 
 function metric(name: string, value: number, labels = '') {
   return `${name}${labels ? `{${labels}}` : ''} ${
@@ -29,6 +30,38 @@ function tcpCheck(host: string, port: number, timeoutMs = 1500) {
 export class MonitorController {
   constructor(private readonly prisma: PrismaService) {}
 
+  @Get('/live')
+  live() {
+    return { status: 'ok' };
+  }
+
+  @Get('/version')
+  version() {
+    return this.releaseIdentity();
+  }
+
+  @Get('/ready')
+  async ready(@Res() response: Response) {
+    const [postgresql, redis, temporal] = await Promise.all([
+      this.prisma.$queryRaw`SELECT 1`.then(() => true).catch(() => false),
+      ioRedis
+        .ping()
+        .then((reply) => reply === 'PONG')
+        .catch(() => false),
+      this.temporalUp().then((value) => value === 1),
+    ]);
+    const releaseIdentity = this.releaseIdentity();
+    const releaseReady =
+      process.env.NODE_ENV !== 'production' ||
+      !Object.values(releaseIdentity).includes('unknown');
+    const ready = postgresql && redis && temporal && releaseReady;
+    return response.status(ready ? 200 : 503).json({
+      status: ready ? 'ready' : 'not_ready',
+      dependencies: { postgresql, redis, temporal },
+      release_identity: releaseReady,
+    });
+  }
+
   @Get('/queue/:name')
   async getMessagesGroup(@Param('name') name: string) {
     return { status: 'success', queue: name };
@@ -50,6 +83,12 @@ export class MonitorController {
       deadWebhooks,
       activeSessions,
       failedPosts,
+      pendingSocialDeliveries,
+      failedSocialDeliveries,
+      pendingSocialOutbox,
+      deadSocialOutbox,
+      failedProviderInbox,
+      oldestPendingOutbox,
       redisUp,
       temporalUp,
       elasticsearchUp,
@@ -72,16 +111,50 @@ export class MonitorController {
           where: { state: 'ERROR', deletedAt: null },
         })
       ),
+      safeCount(
+        this.prisma.socialDelivery.count({
+          where: {
+            state: {
+              in: ['PENDING', 'PUBLISHING', 'PROVIDER_ACCEPTED', 'RETRY_WAIT'],
+            },
+          },
+        })
+      ),
+      safeCount(
+        this.prisma.socialDelivery.count({
+          where: { state: { in: ['FAILED', 'DEAD_LETTERED'] } },
+        })
+      ),
+      safeCount(
+        this.prisma.socialOutboxEvent.count({
+          where: { state: { in: ['PENDING', 'LEASED', 'RETRY_WAIT'] } },
+        })
+      ),
+      safeCount(
+        this.prisma.socialOutboxEvent.count({
+          where: { state: 'DEAD_LETTERED' },
+        })
+      ),
+      safeCount(
+        this.prisma.socialProviderInbox.count({ where: { state: 'FAILED' } })
+      ),
+      this.prisma.socialOutboxEvent
+        .findFirst({
+          where: { state: { in: ['PENDING', 'LEASED', 'RETRY_WAIT'] } },
+          orderBy: { createdAt: 'asc' },
+          select: { createdAt: true },
+        })
+        .then((event) =>
+          event
+            ? Math.max(0, (Date.now() - event.createdAt.getTime()) / 1000)
+            : 0
+        )
+        .catch(() => -1),
       ioRedis
         .ping()
         .then((reply) => (reply === 'PONG' ? 1 : 0))
         .catch(() => 0),
-      (() => {
-        const [host, port] = (process.env.TEMPORAL_ADDRESS || 'temporal:7233')
-          .replace(/^https?:\/\//, '')
-          .split(':');
-        return tcpCheck(host, Number(port || '7233'));
-      })(),
+      this.temporalUp(),
       process.env.ELASTICSEARCH_URL
         ? fetch(process.env.ELASTICSEARCH_URL, {
             method: 'HEAD',
@@ -124,6 +197,42 @@ export class MonitorController {
       metric('codestra_active_sessions', activeSessions),
       '# TYPE codestra_publication_failures gauge\n',
       metric('codestra_publication_failures', failedPosts),
+      '# TYPE codestra_social_delivery_pending gauge\n',
+      metric('codestra_social_delivery_pending', pendingSocialDeliveries),
+      '# TYPE codestra_social_delivery_failed gauge\n',
+      metric('codestra_social_delivery_failed', failedSocialDeliveries),
+      '# TYPE codestra_social_outbox_pending gauge\n',
+      metric('codestra_social_outbox_pending', pendingSocialOutbox),
+      '# TYPE codestra_social_outbox_dead_letters gauge\n',
+      metric('codestra_social_outbox_dead_letters', deadSocialOutbox),
+      '# TYPE codestra_social_provider_inbox_failed gauge\n',
+      metric('codestra_social_provider_inbox_failed', failedProviderInbox),
+      '# TYPE codestra_social_outbox_oldest_pending_seconds gauge\n',
+      metric(
+        'codestra_social_outbox_oldest_pending_seconds',
+        oldestPendingOutbox
+      ),
+      '# TYPE codestra_social_safety_flag gauge\n',
+      metric(
+        'codestra_social_safety_flag',
+        process.env.SOCIAL_PUBLISHING_ENABLED === 'true' ? 1 : 0,
+        'flag="publishing_enabled"'
+      ),
+      metric(
+        'codestra_social_safety_flag',
+        process.env.ENABLE_EXTERNAL_DELIVERY === 'true' ? 1 : 0,
+        'flag="external_delivery_enabled"'
+      ),
+      metric(
+        'codestra_social_safety_flag',
+        process.env.PUBLISHING_KILL_SWITCH === 'true' ? 1 : 0,
+        'flag="publishing_kill_switch"'
+      ),
+      metric(
+        'codestra_social_safety_flag',
+        process.env.MIDDLEWARE_OUTBOX_ENABLED === 'true' ? 1 : 0,
+        'flag="middleware_outbox_enabled"'
+      ),
       '# TYPE codestra_dependency_up gauge\n',
       metric(
         'codestra_dependency_up',
@@ -138,8 +247,51 @@ export class MonitorController {
         'dependency="elasticsearch"'
       ),
       '# TYPE codestra_ai_available gauge\n',
-      metric('codestra_ai_available', process.env.OPENAI_API_KEY ? 1 : 0),
+      metric(
+        'codestra_ai_available',
+        isRuntimeCapabilityEnabled('EXTERNAL_MODEL_CALLS_ENABLED') &&
+          process.env.OPENAI_API_KEY
+          ? 1
+          : 0
+      ),
+      '# TYPE codestra_runtime_capability_enabled gauge\n',
+      metric(
+        'codestra_runtime_capability_enabled',
+        isRuntimeCapabilityEnabled('BILLING_LIVE_CHARGE') ? 1 : 0,
+        'capability="billing_live_charge"'
+      ),
+      metric(
+        'codestra_runtime_capability_enabled',
+        isRuntimeCapabilityEnabled('EXTERNAL_MODEL_CALLS_ENABLED') ? 1 : 0,
+        'capability="external_model_calls"'
+      ),
+      metric(
+        'codestra_runtime_capability_enabled',
+        isRuntimeCapabilityEnabled('WEBHOOK_DELIVERY_ENABLED') ? 1 : 0,
+        'capability="webhook_delivery"'
+      ),
+      metric(
+        'codestra_runtime_capability_enabled',
+        process.env.PUBLISHING_KILL_SWITCH === 'false' ? 1 : 0,
+        'capability="social_publishing"'
+      ),
     ].join('');
     return response.type('text/plain; version=0.0.4').send(body);
+  }
+
+  private temporalUp() {
+    const [host, port] = (process.env.TEMPORAL_ADDRESS || 'temporal:7233')
+      .replace(/^https?:\/\//, '')
+      .split(':');
+    return tcpCheck(host, Number(port || '7233'));
+  }
+
+  private releaseIdentity() {
+    return {
+      source_revision: process.env.SOURCE_REVISION || 'unknown',
+      image_digest: process.env.IMAGE_DIGEST || 'unknown',
+      image_version: process.env.IMAGE_VERSION || 'unknown',
+      build_created: process.env.BUILD_CREATED || 'unknown',
+    };
   }
 }

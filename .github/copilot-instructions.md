@@ -19,7 +19,7 @@ migrations, keep live capabilities disabled, and are never self-merged.
 
 ## Developer Workflows
 
-- Use Node.js 20.17.0 and pnpm 8+.
+- Use Node.js 22.14.0 and pnpm 10.34.0 as pinned by the repository.
 - Install dependencies: `pnpm install`
 - Build all apps: `pnpm run build`
 - Run all apps in dev mode: `pnpm run dev`

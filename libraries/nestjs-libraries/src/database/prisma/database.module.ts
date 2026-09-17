@@ -50,6 +50,23 @@ import { AdminStatsRepository } from '@gitroom/nestjs-libraries/database/prisma/
 import { AdminStatsService } from '@gitroom/nestjs-libraries/database/prisma/admin-stats/admin-stats.service';
 import { SessionService } from '@gitroom/nestjs-libraries/security/session.service';
 import { SecureWebhooksService } from '@gitroom/nestjs-libraries/security/secure-webhooks.service';
+import { SocialControlRepository } from '@gitroom/nestjs-libraries/database/prisma/social-control/social-control.repository';
+import { SocialControlService } from '@gitroom/nestjs-libraries/database/prisma/social-control/social-control.service';
+import { SocialProviderEventsRepository } from '@gitroom/nestjs-libraries/database/prisma/social-control/social-provider-events.repository';
+import { SocialProviderEventsService } from '@gitroom/nestjs-libraries/database/prisma/social-control/social-provider-events.service';
+import { SocialProviderWebhookVerifier } from '@gitroom/nestjs-libraries/security/social-provider-webhook.verifier';
+import { SocialMiddlewareOutboxRepository } from '@gitroom/nestjs-libraries/database/prisma/social-control/social-middleware-outbox.repository';
+import { SocialMiddlewareClient } from '@gitroom/nestjs-libraries/integrations/codestra/social-middleware.client';
+import { SocialMiddlewareOutboxDispatcher } from '@gitroom/nestjs-libraries/integrations/codestra/social-middleware-outbox.dispatcher';
+import { SocialOnboardingRepository } from '@gitroom/nestjs-libraries/database/prisma/social-control/social-onboarding.repository';
+import { SocialOnboardingService } from '@gitroom/nestjs-libraries/database/prisma/social-control/social-onboarding.service';
+import { SocialBillingRepository } from '@gitroom/nestjs-libraries/database/prisma/social-control/social-billing.repository';
+import { SocialBillingService } from '@gitroom/nestjs-libraries/database/prisma/social-control/social-billing.service';
+import { SocialBrandRepository } from '@gitroom/nestjs-libraries/database/prisma/social-control/social-brand.repository';
+import { SocialBrandService } from '@gitroom/nestjs-libraries/database/prisma/social-control/social-brand.service';
+import { SocialApprovalService } from '@gitroom/nestjs-libraries/database/prisma/social-control/social-approval.service';
+import { SocialCampaignService } from '@gitroom/nestjs-libraries/database/prisma/social-control/social-campaign.service';
+import { SocialEngagementService } from '@gitroom/nestjs-libraries/database/prisma/social-control/social-engagement.service';
 
 @Global()
 @Module({
@@ -105,6 +122,23 @@ import { SecureWebhooksService } from '@gitroom/nestjs-libraries/security/secure
     AdminStatsService,
     SessionService,
     SecureWebhooksService,
+    SocialControlRepository,
+    SocialControlService,
+    SocialProviderEventsRepository,
+    SocialProviderEventsService,
+    SocialProviderWebhookVerifier,
+    SocialMiddlewareOutboxRepository,
+    SocialMiddlewareClient,
+    SocialMiddlewareOutboxDispatcher,
+    SocialOnboardingRepository,
+    SocialOnboardingService,
+    SocialBillingRepository,
+    SocialBillingService,
+    SocialBrandRepository,
+    SocialBrandService,
+    SocialApprovalService,
+    SocialCampaignService,
+    SocialEngagementService,
   ],
   get exports() {
     return this.providers;

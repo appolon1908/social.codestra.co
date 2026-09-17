@@ -4,3 +4,13 @@ useDefault = true
 [[allowlists]]
 description = "Generated i18n checksum lock; every value is independently constrained to a 32-character lowercase checksum"
 paths = ['''^i18n\.lock$''']
+
+# The SDK platform specs assert that an idempotency key is forwarded as a header,
+# so they carry the literal placeholder "idempotency-key-1234". The default
+# generic-api-key rule matches it on the `...Key: '...'` shape alone. Scoped to
+# that one literal inside the test directory so real credentials are still caught.
+[[allowlists]]
+description = "Literal idempotency-key placeholder in security-remediation test fixtures"
+condition = "AND"
+paths = ['''^security-remediation/tests/''']
+regexes = ['''idempotency-key-1234''']

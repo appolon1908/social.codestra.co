@@ -25,6 +25,13 @@ TEST_COMMANDS=
 CI_RUN_URL=
 ROLLBACK_OR_FORWARD_FIX=
 
+## Stack and dependencies
+
+- Base/dependency branch:
+- Required contract version:
+- Required cross-repository branch/SHA:
+- Merge order:
+
 ## Authority and design
 
 - Authoritative service and durable store:

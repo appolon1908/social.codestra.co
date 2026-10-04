@@ -5,7 +5,7 @@
     "apps/orchestrator/src",
     "libraries/nestjs-libraries/src/chat/start.mcp.ts"
   ],
-  "route_count": 246,
+  "route_count": 248,
   "routes": [
     {
       "method": "GET",
@@ -1582,6 +1582,43 @@
       ],
       "parameter_decorators": [
         "Body",
+        "GetServiceAuth",
+        "Param"
+      ]
+    },
+    {
+      "method": "POST",
+      "path": "/internal/v1/social/media",
+      "controller": "InternalSocialController",
+      "handler": "registerMedia",
+      "source": "apps/backend/src/api/routes/internal-social.controller.ts",
+      "controller_decorators": [
+        "ApiTags",
+        "UseGuards"
+      ],
+      "handler_decorators": [
+        "RequireServiceScopes"
+      ],
+      "parameter_decorators": [
+        "Body",
+        "GetServiceAuth",
+        "Headers"
+      ]
+    },
+    {
+      "method": "GET",
+      "path": "/internal/v1/social/media/:assetId",
+      "controller": "InternalSocialController",
+      "handler": "getMedia",
+      "source": "apps/backend/src/api/routes/internal-social.controller.ts",
+      "controller_decorators": [
+        "ApiTags",
+        "UseGuards"
+      ],
+      "handler_decorators": [
+        "RequireServiceScopes"
+      ],
+      "parameter_decorators": [
         "GetServiceAuth",
         "Param"
       ]

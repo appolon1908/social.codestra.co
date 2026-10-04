@@ -57,6 +57,7 @@ model Organization {
   socialApprovalRequests SocialApprovalRequest[]
   socialCampaigns        SocialCampaign[]
   socialEngagementItems  SocialEngagementItem[]
+  socialMediaArtifacts   SocialMediaArtifact[]
 
   @@index([apiKey])
   @@index([streakSince])
@@ -787,6 +788,27 @@ model Integration {
   @@index([inBetweenSteps])
   @@index([refreshNeeded])
   @@index([disabled])
+}
+
+model SocialMediaArtifact {
+  id               String       @id
+  tenantId         String
+  idempotencyKey   String
+  payloadHash      String
+  correlationId    String
+  registeredBy     String
+  mediaType        String
+  contentType      String
+  storageReference String
+  checksumSha256   String
+  metadata         Json         @default("{}")
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+  tenant           Organization @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, createdAt])
+  @@index([checksumSha256])
 }
 
 model SocialPublicationCommand {

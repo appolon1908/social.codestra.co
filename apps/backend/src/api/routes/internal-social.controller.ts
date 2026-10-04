@@ -43,6 +43,8 @@ import {
   SocialEngagementEscalateDto,
   SocialEngagementIngestDto,
 } from '@gitroom/nestjs-libraries/dtos/social-control/social-engagement.dto';
+import { SocialMediaArtifactService } from '@gitroom/nestjs-libraries/database/prisma/social-control/social-media-artifact.service';
+import { SocialMediaArtifactDto } from '@gitroom/nestjs-libraries/dtos/social-control/social-media-artifact.dto';
 
 @ApiTags('Codestra Social private control plane')
 @Controller('/internal/v1/social')
@@ -55,8 +57,28 @@ export class InternalSocialController {
     private readonly brands: SocialBrandService,
     private readonly approvals: SocialApprovalService,
     private readonly campaigns: SocialCampaignService,
-    private readonly engagement: SocialEngagementService
+    private readonly engagement: SocialEngagementService,
+    private readonly media: SocialMediaArtifactService
   ) {}
+
+  @Post('/media')
+  @RequireServiceScopes('social.media.write')
+  registerMedia(
+    @GetServiceAuth() auth: ServiceAuthContext,
+    @Headers('idempotency-key') idempotencyKey: string | undefined,
+    @Body() body: SocialMediaArtifactDto
+  ) {
+    return this.media.register(auth, idempotencyKey, body);
+  }
+
+  @Get('/media/:assetId')
+  @RequireServiceScopes('social.media.read')
+  getMedia(
+    @GetServiceAuth() auth: ServiceAuthContext,
+    @Param('assetId') assetId: string
+  ) {
+    return this.media.get(auth, assetId);
+  }
 
   @Post('/engagement')
   @RequireServiceScopes('social.engagement.ingest')

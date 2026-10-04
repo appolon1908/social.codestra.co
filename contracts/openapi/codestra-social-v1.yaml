@@ -12,6 +12,50 @@ security:
   - serviceOAuth: [social.commands.read]
     mutualTLS: []
 paths:
+  /internal/v1/social/media:
+    post:
+      operationId: registerSocialMediaArtifact
+      summary: Register a Middleware-owned media artifact in Social tenant state
+      security:
+        - serviceOAuth: [social.media.write]
+          mutualTLS: []
+      parameters:
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/IdempotencyKey'
+        - $ref: '#/components/parameters/TenantId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaArtifactRegistration'
+      responses:
+        '201':
+          description: Artifact registered without provider delivery
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaArtifact'
+        '409':
+          description: Idempotency key or asset identity conflicts with existing content
+  /internal/v1/social/media/{assetId}:
+    get:
+      operationId: getSocialMediaArtifact
+      security:
+        - serviceOAuth: [social.media.read]
+          mutualTLS: []
+      parameters:
+        - $ref: '#/components/parameters/AssetId'
+        - $ref: '#/components/parameters/CorrelationId'
+        - $ref: '#/components/parameters/TenantId'
+      responses:
+        '200':
+          description: Tenant-scoped media artifact
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaArtifact'
+        '404': { description: Artifact not found in the caller tenant }
   /internal/v1/social/commands/publish:
     post:
       operationId: requestSocialPublication
@@ -124,6 +168,8 @@ components:
             social.commands.read: Read governed social commands
             social.deliveries.read: Read delivery and reconciliation state
             social.accounts.read: Read non-secret social-account health
+            social.media.write: Register media artifacts from Middleware
+            social.media.read: Read tenant media artifact metadata
     mutualTLS:
       type: mutualTLS
   parameters:
@@ -142,6 +188,11 @@ components:
       in: header
       required: true
       schema: { type: string, minLength: 1, maxLength: 100 }
+    AssetId:
+      name: assetId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
     CommandId:
       name: commandId
       in: path
@@ -158,6 +209,52 @@ components:
       required: true
       schema: { type: string, minLength: 1, maxLength: 100 }
   schemas:
+    MediaArtifactRegistration:
+      type: object
+      additionalProperties: false
+      required:
+        - asset_id
+        - media_type
+        - content_type
+        - storage_reference
+        - checksum_sha256
+      properties:
+        asset_id: { type: string, format: uuid }
+        media_type: { enum: [video, image, audio, document, other] }
+        content_type: { type: string, minLength: 3, maxLength: 255 }
+        storage_reference: { type: string, minLength: 1, maxLength: 2048 }
+        checksum_sha256:
+          type: string
+          pattern: '^[0-9a-fA-F]{64}$'
+        metadata: { type: object, additionalProperties: true }
+    MediaArtifact:
+      type: object
+      additionalProperties: false
+      required:
+        - asset_id
+        - tenant_id
+        - media_type
+        - content_type
+        - storage_reference
+        - checksum_sha256
+        - correlation_id
+        - idempotency_replayed
+        - provider_delivery
+        - created_at
+        - updated_at
+      properties:
+        asset_id: { type: string, format: uuid }
+        tenant_id: { type: string }
+        media_type: { type: string }
+        content_type: { type: string }
+        storage_reference: { type: string }
+        checksum_sha256: { type: string }
+        metadata: { type: object, additionalProperties: true }
+        correlation_id: { type: string, format: uuid }
+        idempotency_replayed: { type: boolean }
+        provider_delivery: { const: disabled }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
     PublicationCommand:
       type: object
       additionalProperties: false

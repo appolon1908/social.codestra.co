@@ -67,7 +67,11 @@ async function start() {
         ip === '127.0.0.1' || ip === '::1' || trustedProxyIps.includes(ip)
     );
 
-  await startMcp(app);
+  if (process.env.EXTERNAL_MODEL_CALLS_ENABLED === 'true') {
+    await startMcp(app);
+  } else {
+    Logger.log('MCP/AI startup disabled by EXTERNAL_MODEL_CALLS_ENABLED=false');
+  }
 
   app.useGlobalPipes(
     new ValidationPipe({

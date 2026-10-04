@@ -36,7 +36,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MediaArtifact'
-        '409': { description: Idempotency key or asset identity conflicts with existing content }
+        '409':
+          description: Idempotency key or asset identity conflicts with existing content
   /internal/v1/social/media/{assetId}:
     get:
       operationId: getSocialMediaArtifact
@@ -211,121 +212,36 @@ components:
     MediaArtifactRegistration:
       type: object
       additionalProperties: false
-      required: [asset_id, media_type, content_type, storage_reference, checksum_sha256]
+      required:
+        - asset_id
+        - media_type
+        - content_type
+        - storage_reference
+        - checksum_sha256
       properties:
         asset_id: { type: string, format: uuid }
         media_type: { enum: [video, image, audio, document, other] }
         content_type: { type: string, minLength: 3, maxLength: 255 }
         storage_reference: { type: string, minLength: 1, maxLength: 2048 }
-        checksum_sha256: { type: string, pattern: '^[0-9a-fA-F]{64}      type: object
-      additionalProperties: false
-      required: [command_version, post, targets]
-      properties:
-        command_version: { const: '1.0' }
-        requested_by: { type: string, minLength: 1, maxLength: 200 }
-        schedule_at: { type: [string, 'null'], format: date-time }
-        post:
-          type: object
-          additionalProperties: false
-          required: [content]
-          properties:
-            content: { type: string, maxLength: 100000 }
-            media_ids:
-              type: array
-              maxItems: 20
-              items: { type: string }
-            metadata: { type: object, additionalProperties: true }
-        targets:
-          type: array
-          minItems: 1
-          maxItems: 100
-          items:
-            type: object
-            additionalProperties: false
-            required: [account_id, provider, settings]
-            properties:
-              account_id: { type: string }
-              provider: { type: string }
-              settings: { type: object, additionalProperties: true }
-    CommandAccepted:
-      type: object
-      required: [command_id, state, idempotency_replayed, publishing_enabled]
-      properties:
-        command_id: { type: string, format: uuid }
-        state: { enum: [requested, validated, persisted, queued, blocked] }
-        idempotency_replayed: { type: boolean }
-        publishing_enabled: { type: boolean }
-    CommandStatus:
-      type: object
-      required: [command_id, state, deliveries]
-      properties:
-        command_id: { type: string, format: uuid }
-        state:
-          enum:
-            [
-              requested,
-              validated,
-              persisted,
-              queued,
-              accepted,
-              reconciled,
-              completed,
-              failed,
-              dead_lettered,
-              blocked,
-            ]
-        deliveries:
-          type: array
-          items: { $ref: '#/components/schemas/Delivery' }
-    Delivery:
-      type: object
-      required: [delivery_id, account_id, provider, state, attempt]
-      properties:
-        delivery_id: { type: string, format: uuid }
-        account_id: { type: string }
-        provider: { type: string }
-        state:
-          enum:
-            [
-              pending,
-              publishing,
-              provider_accepted,
-              published,
-              retry_wait,
-              failed,
-              dead_lettered,
-              cancelled,
-            ]
-        attempt: { type: integer, minimum: 0 }
-        provider_post_id: { type: [string, 'null'] }
-        reconciled_at: { type: [string, 'null'], format: date-time }
-        error_code: { type: [string, 'null'] }
-    AccountHealth:
-      type: object
-      required: [account_id, provider, state]
-      properties:
-        account_id: { type: string }
-        provider: { type: string }
-        state: { enum: [healthy, expiring, reconnect_required, disabled] }
-        scopes: { type: array, items: { type: string } }
-        expires_at: { type: [string, 'null'], format: date-time }
-    ReleaseIdentity:
-      type: object
-      required: [source_revision, image_digest, version, environment]
-      properties:
-        source_revision: { type: string }
-        image_digest: { type: string }
-        version: { type: string }
-        environment: { type: string }
- }
+        checksum_sha256:
+          type: string
+          pattern: '^[0-9a-fA-F]{64}$'
         metadata: { type: object, additionalProperties: true }
     MediaArtifact:
       type: object
       additionalProperties: false
       required:
-        [asset_id, tenant_id, media_type, content_type, storage_reference,
-         checksum_sha256, correlation_id, idempotency_replayed,
-         provider_delivery, created_at, updated_at]
+        - asset_id
+        - tenant_id
+        - media_type
+        - content_type
+        - storage_reference
+        - checksum_sha256
+        - correlation_id
+        - idempotency_replayed
+        - provider_delivery
+        - created_at
+        - updated_at
       properties:
         asset_id: { type: string, format: uuid }
         tenant_id: { type: string }

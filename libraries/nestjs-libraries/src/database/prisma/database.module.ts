@@ -67,6 +67,7 @@ import { SocialBrandService } from '@gitroom/nestjs-libraries/database/prisma/so
 import { SocialApprovalService } from '@gitroom/nestjs-libraries/database/prisma/social-control/social-approval.service';
 import { SocialCampaignService } from '@gitroom/nestjs-libraries/database/prisma/social-control/social-campaign.service';
 import { SocialEngagementService } from '@gitroom/nestjs-libraries/database/prisma/social-control/social-engagement.service';
+import { SocialMediaArtifactService } from '@gitroom/nestjs-libraries/database/prisma/social-control/social-media-artifact.service';
 
 @Global()
 @Module({
@@ -139,6 +140,7 @@ import { SocialEngagementService } from '@gitroom/nestjs-libraries/database/pris
     SocialApprovalService,
     SocialCampaignService,
     SocialEngagementService,
+    SocialMediaArtifactService,
   ],
   get exports() {
     return this.providers;

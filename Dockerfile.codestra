@@ -22,7 +22,7 @@ RUN NODE_OPTIONS="--max-old-space-size=6144" pnpm run build
 RUN CI=true pnpm prune --prod \
     && rm -rf node_modules/@temporalio/core-bridge/target /root/.cache /root/.local/share/pnpm/store
 
-FROM debian@sha256:f324c7ff54321e8d9c588493a20244965938ce0aa50bbd1022d38010e9ffc4b1 AS runtime
+FROM debian@sha256:913f6706df59a68922d1dd08f78c2476560a8d367897200a6005b00e5f67c2d5 AS runtime
 ARG SOURCE_REVISION
 ARG BUILD_VERSION
 ARG BUILD_CREATED

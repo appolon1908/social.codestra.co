@@ -1,4 +1,4 @@
-FROM node:26.9-bookworm-slim
+FROM node:26.10-bookworm-slim
 ARG NEXT_PUBLIC_VERSION
 ENV NEXT_PUBLIC_VERSION=$NEXT_PUBLIC_VERSION
 RUN apt-get update && apt-get install -y --no-install-recommends \
